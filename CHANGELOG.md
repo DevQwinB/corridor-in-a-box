@@ -17,6 +17,22 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   (implemented by `Sep31Adapter` and the mock, which takes `capabilities` overrides)
   and the `QuoteProvider` interface. `capabilities()` is now required on
   `AnchorAdapter`, a breaking change for out-of-tree adapters.
+### Changed — anchor-side terminal failure after settle enters `refund_pending`
+
+- Under `rollback: refund_sender`, when money has moved and the anchor reports a
+  terminal failure, the run now goes `recovering -> refund_pending` and waits for
+  the anchor's refund report instead of calling `submitter.refund` (which the real
+  submitter always refuses). `reconcileUntil` now carries the terminal
+  `TransactionStatus` on the error's `cause` (`anchorTerminalStatus()`). Timeouts,
+  stalls, the no-hash path and the `hold` / `manual` policies are unchanged.
+
+### Added — per-corridor reconcile cadence
+
+- Manifests can set `recovery.reconcile: { poll_seconds?, stall_polls? }`
+  (`stall_polls: 0` disables stall detection). Resolution order is manifest,
+  then `EngineDeps.reconcilePollMs` / `stallThreshold`, then 2s / 10 polls; it
+  applies to resumed runs too. `liveness()` warns when
+  `poll_seconds x stall_polls` is not below `timeout_seconds`.
 
 ### Added — `source.protocol` declares how the sending side is reached (#182)
 
@@ -36,6 +52,22 @@ prints the source protocol.
 - Until a `v0.1.0` tag exists, [Unreleased] links to repository commit history
   rather than a release comparison. The historical 0.1.0 section below remains
   unlinked until its release commit can be tagged.
+
+### Added — Pre-settle gate and corridor-halt error codes (#139) (2026-09-25)
+
+Added 9 dedicated pre-settle gate and circuit breaker error codes to `CorridorErrorCode`:
+
+- `PRESETTLE_ANCHOR_DRIFT` — live /info or stellar.toml no longer matches what was verified
+- `PRESETTLE_TX_MISMATCH` — the opened anchor transaction is not what we are about to pay
+- `PRESETTLE_DESTINATION_UNSAFE` — destination missing, no trustline, or not authorized
+- `PRESETTLE_INSUFFICIENT_FUNDS` — our balance cannot cover amount + fee + reserve
+- `PRESETTLE_QUOTE_WINDOW` — firm quote will not survive settle + confirm
+- `PRESETTLE_AMOUNT_OUT_OF_RANGE` — outside anchor or manifest min/max
+- `PRESETTLE_RECEIVER_NOT_ACCEPTED` — SEP-12 status is no longer ACCEPTED
+- `CORRIDOR_UNPROVEN` — amount above the canary cap on a non-PROVEN lane
+- `CORRIDOR_HALTED` — per-corridor circuit breaker is open
+
+Added helper `isPreSettleCode(code): boolean` in `@corridor/types` and mapped the error codes in `@corridor/service` HTTP router.
 
 ### Changed — attester rejections carry a typed contract error code (2026-09-24)
 
