@@ -17,6 +17,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   (implemented by `Sep31Adapter` and the mock, which takes `capabilities` overrides)
   and the `QuoteProvider` interface. `capabilities()` is now required on
   `AnchorAdapter`, a breaking change for out-of-tree adapters.
+
 ### Changed — anchor-side terminal failure after settle enters `refund_pending`
 
 - Under `rollback: refund_sender`, when money has moved and the anchor reports a
