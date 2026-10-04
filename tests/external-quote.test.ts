@@ -61,6 +61,7 @@ function deps(over: Partial<EngineDeps> = {}, adapterOpts = {}): EngineDeps {
     submitter: createMockSubmitter(),
     idempotency: new InMemoryIdempotencyStore(),
     trustManifestWithoutAttestation: true,
+    unsafeSkipPreSettleGate: true,
     ...over,
   };
 }
